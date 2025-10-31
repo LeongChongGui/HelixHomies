@@ -1,3 +1,5 @@
+Here's the updated README with the Git LFS information added:
+
 # HelixHomies — README
 
 Documentation: how we predict m⁶A probabilities on test datasets (Tasks 1 & 2)
@@ -53,7 +55,7 @@ Written by the pipeline:
 ### Persisted Artifacts
 
 - `ohe.pkl` — fitted OneHotEncoder used for sequence features
-- `random_forest_model.pkl` — final RF model (Task 2)
+- `random_forest_model.pkl` — final RF model (Task 2) - **Note: This file is stored using Git LFS due to its large size**
 - `xgb_random_search_cv_results.csv` — XGBoost CV summary (if run)
 
 ## High-level Pipeline Summary
@@ -206,6 +208,8 @@ joblib.dump(rf_model, '/path/to/random_forest_model.pkl')
 
 These `.pkl` artifacts enable batch-scoring of new JSON files (the prediction script loads `ohe.pkl`, `random_forest_model.pkl`, runs `test_feature_extraction` and saves CSVs).
 
+**Important Note**: The `random_forest_model.pkl` file is stored using Git LFS due to its large size. Make sure you have Git LFS installed and set up to properly download this file.
+
 ## Post-processing & Downstream Analyses
 
 Common downstream checks and analyses (scripts available / recommended):
@@ -258,9 +262,35 @@ df_test['score'] = scores
 df_test[['transcript_id','transcript_position','score']].to_csv('predictions_new.csv', index=False)
 ```
 
-## Where to Look in the Repo
+**Note**: The `random_forest_model.pkl` file is stored with Git LFS. Ensure you have Git LFS installed and run `git lfs pull` to download the large model file if it doesn't download automatically.
 
-- add in the appropriates files and description
+## Where to Look in the Repo??????????????????????????????????????????
+
+- `parse.py` — JSON parsing functions
+- `features.py` — `extract_features`, `extract_seq_features`, `feature_extraction` & `test_feature_extraction`
+- `train_xgb.py` — XGBoost training, randomized search scripts (Task 1)
+- `train_rf.py` — Random Forest training & SMOTE path (Task 2, final)
+- `predict.py` — load `.pkl` artifacts, extract features, save predictions CSVs
+- `analysis/` — DRACH enrichment, plots (boxplots, heatmaps, correlation matrices)
+
+## Git LFS Note
+
+This repository uses Git LFS (Large File Storage) to handle large model files. To ensure you can properly download and use the `random_forest_model.pkl` file:
+
+1. Install Git LFS on your system:
+   ```bash
+   git lfs install
+   ```
+
+2. Clone the repository as usual - Git LFS files should download automatically:
+   ```bash
+   git clone <repository-url>
+   ```
+
+3. If the large files don't download automatically, you can pull them manually:
+   ```bash
+   git lfs pull
+   ```
 
 ## Final Notes on Innovation & Impact
 
