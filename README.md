@@ -207,7 +207,7 @@ These `.pkl` artifacts enable batch-scoring of new JSON files (the prediction sc
 
 **Important Note**: The `random_forest_model.pkl` file is stored using Git LFS due to its large size. Make sure you have Git LFS installed and set up to properly download this file.
 
-## Post-processing & Downstream Analyses
+## Post-processing & Downstream Analyses??????????????????????????????????????????????//
 
 Common downstream checks and analyses (scripts available / recommended):
 
@@ -219,14 +219,14 @@ Common downstream checks and analyses (scripts available / recommended):
 
 Scripts in this repo include plotting functions for these analyses (see `analysis/`).
 
-## Reproducibility & Recommended Best Practices
+## Reproducibility & Recommended Best Practices??????????????????????????????????????????????????????????/
 
 - **Gene/transcript-level splits**: to prevent information leakage, perform train/test splits by gene/transcript (not by random positions). The code shown used dataset0 for both training and (part of) test — treat `X_test_0` as in-repo validation. For final evaluation, use held-out genes or completely separate datasets (dataset1/2) as true test sets
 - **Coverage checks**: predictions at low-read positions are less reliable. When possible, include read depth per-site and filter or downweight low-coverage sites
 - **Calibration**: RF scores are not necessarily calibrated probabilities. If you need calibrated probabilities, consider `CalibratedClassifierCV` (Platt / isotonic)
 - **Multiple thresholds & robustness**: report results for several thresholds (0.9, 0.7, 0.5) or top-K (top 100/500/1000) and show motif-enrichment robustness across these
 
-## Limitations
+## Limitations???????????????????????????????????????????/
 
 - Labels are site-level (from orthogonal biochemical assay) but reads are unlabeled → label noise and MIL (multiple-instance) issues. This pipeline mitigates via per-site aggregation but does not implement read-level MIL or attention pooling. Future work: compare RF baseline with MIL/attention models (e.g., m6Anet-like architectures) to try to directly model per-read heterogeneity
 - SMOTE synthetically balances classes but can introduce artifacts; we only used SMOTE for RF baseline. Alternative approaches include class weighting, focal loss (for deep models), and careful negative sampling
@@ -289,7 +289,7 @@ This repository uses Git LFS (Large File Storage) to handle large model files. T
    git lfs pull
    ```
 
-## Final Notes on Innovation & Impact
+## Final Notes on Innovation & Impact?????????????????????????????????????
 
 **Innovation**: The pipeline combines dwell-time-weighted aggregation of per-read signal statistics with local difference features and contextual 5-mer encoding. This is a pragmatic, interpretable strategy that is fast to train and reproducible — and a sensible baseline before moving to MIL / attention models.
 
