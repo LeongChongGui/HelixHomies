@@ -1,5 +1,3 @@
-Here's the updated README with the Git LFS information added:
-
 # HelixHomies — README
 
 Documentation: how we predict m⁶A probabilities on test datasets (Tasks 1 & 2)
