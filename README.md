@@ -54,7 +54,6 @@ Written by the pipeline:
 
 - `ohe.pkl` — fitted OneHotEncoder used for sequence features
 - `random_forest_model.pkl` — final RF model (Task 2) - **Note: This file is stored using Git LFS due to its large size**
-- `xgb_random_search_cv_results.csv` — XGBoost CV summary (if run)
 
 ## High-level Pipeline Summary
 
