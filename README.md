@@ -66,8 +66,14 @@ scp -i ./YourMachineAddress.pem ./random_forest_model.pkl ./ohe.pkl ./predict_m6
 Linux/macOS Environment (adjust as needed):
 
 ```bash
-chmod 600 ./YourMachineAddress
+# Change the permissions of the private key file to be readable and writable only by the owner
+chmod 600 ./YourMachineAddress.pem
+
 scp -i ./YourMachineAddress.pem ./random_forest_model.pkl ./ohe.pkl ./predict_m6a.py ./data.json.gz ubuntu@YourMachineAddress.nus.cloud:~/helixhomies/
+# ensure current directory is where all necessary files are stored
+# example: transfer 2 data files
+# scp -i ./dsa4262-2510-teamname-myname.pem ./random_forest_model.pkl ./ohe.pkl ./predict_m6a.py ./data.json ./data2.json.gz ubuntu@dsa4262-2510-teamname-myname.nus.cloud:~/helixhomies/
+```
 ```
 
 3. Reconnect to your instance once the files are uploaded and `cd helixhomies` to navigate to the helixhomies folder.
