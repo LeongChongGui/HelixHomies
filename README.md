@@ -74,7 +74,6 @@ scp -i ./YourMachineAddress.pem ./random_forest_model.pkl ./ohe.pkl ./predict_m6
 # example: transfer 2 data files
 # scp -i ./dsa4262-2510-teamname-myname.pem ./random_forest_model.pkl ./ohe.pkl ./predict_m6a.py ./data.json ./data2.json.gz ubuntu@dsa4262-2510-teamname-myname.nus.cloud:~/helixhomies/
 ```
-```
 
 3. Reconnect to your instance once the files are uploaded and `cd helixhomies` to navigate to the helixhomies folder.
 
