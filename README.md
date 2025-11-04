@@ -77,7 +77,7 @@ scp -i ./YourMachineAddress.pem ./random_forest_model.pkl ./ohe.pkl ./predict_m6
 
 3. Reconnect to your instance once the files are uploaded and `cd helixhomies` to navigate to the helixhomies folder.
 
-Run the `ll` command in the folder to check if all necessary files have been transferred.
+Run the `ls` command in the folder to check if all necessary files have been transferred.
 
 - `random_forest_model.pkl`
 
