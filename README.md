@@ -54,7 +54,7 @@ exit
 
 If you did not download the SG-NEx data in Step 1, transfer your JSON file in this step as well. If you would like to make predictions on a few data files, transfer them all by adding the path to the files as shown in the example.
 
-Windows PowerShell style example (adjust as needed):
+Windows PowerShell Environment (adjust as needed):
 
 ```powershell
 scp -i ./YourMachineAddress.pem ./random_forest_model.pkl ./ohe.pkl ./predict_m6a.py ./data.json.gz ubuntu@YourMachineAddress.nus.cloud:~/helixhomies/
@@ -63,10 +63,11 @@ scp -i ./YourMachineAddress.pem ./random_forest_model.pkl ./ohe.pkl ./predict_m6
 # scp -i ./dsa4262-2510-teamname-myname.pem ./random_forest_model.pkl ./ohe.pkl ./predict_m6a.py ./data.json ./data2.json.gz ubuntu@dsa4262-2510-teamname-myname.nus.cloud:~/helixhomies/
 ```
 
-Linux/macOS style example (adjust as needed):
+Linux/macOS Environment (adjust as needed):
 
 ```bash
-scp -i ./YourMachineAddress.pem ./random_forest_model.pkl ./ohe.pkl ubuntu@YourMachineAddress.nus.cloud:~/helixhomies/
+chmod 600 ./YourMachineAddress
+scp -i ./YourMachineAddress.pem ./random_forest_model.pkl ./ohe.pkl ./predict_m6a.py ./data.json.gz ubuntu@YourMachineAddress.nus.cloud:~/helixhomies/
 ```
 
 3. Reconnect to your instance once the files are uploaded and `cd helixhomies` to navigate to the helixhomies folder.
@@ -138,18 +139,10 @@ exit
 
 2. From your local machine run (edit `YourMachineAddress` accordingly):
 
-Windows PowerShell style example (adjust as needed):
-
-```powershell
+```bash
 scp -i YourMachineAddress.pem ubuntu@YourMachineAddress.nus.cloud:/home/ubuntu/helixhomies/predictions.csv .
 # this saves it in your current directory
 # edit the last argument . to ./path_to_desired_directory if needed
-```
-
-Linux/macOS style example (adjust as needed):
-
-```bash
-scp -i ~/YourMachineAddress.pem ubuntu@YourMachineAddress.nus.cloud:/home/ubuntu/helixhomies/predictions.csv .
 ```
 
 The file will appear in the same folder as your `.pem` file on your local machine.
