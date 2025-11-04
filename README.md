@@ -266,8 +266,16 @@ exit
 
 2. From your local machine run (edit `YourMachineAddress` accordingly):
 
-```bash
+Windows PowerShell style example (adjust as needed):
+
+```powershell
 scp -i YourMachineAddress.pem ubuntu@YourMachineAddress.nus.cloud:/home/ubuntu/helixhomies/predictions.csv .
+```
+
+Linux/macOS style example (adjust as needed):
+
+```bash
+scp -i ~/YourMachineAddress.pem ubuntu@YourMachineAddress.nus.cloud:/home/ubuntu/helixhomies/predictions.csv .
 ```
 
 The file will appear in the same folder as your `.pem` file on your local machine.
