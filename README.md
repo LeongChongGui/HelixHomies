@@ -1,10 +1,12 @@
-# Predicting m6A probabilities on cancer cell lines
+# Predicting m6A modification probabilities
 
-This README teaches users how to predict m6A probabilities on cancer cell lines using the pre-trained Random Forest model and one-hot encoder provided. Follow the steps in order.
+This README teaches users how to predict m6A modification probabilities on a dataset using the pre-trained Random Forest model and one-hot encoder provided. The dataset should be a JSON file (possibly zipped) containing the following information: transcript id, position, sequence, and reads.
+
+Follow the steps in order.
 
 ---
 
-## 1. Machine specification (Ubuntu)
+## 1. Machine specification (Ubuntu 22.04)
 
 Ensure your Ubuntu machine is set to the following specs:
 
@@ -18,22 +20,27 @@ Ensure your Ubuntu machine is set to the following specs:
 
 ## 2. Folder & initial data download (assumes you're at your home directory after connecting to the instance)
 
-> (Lecture / week 7 instructions already cover how to connect to the instance.)
+Connect to the instance using the Lecture / week 7 instructions.
 
 Once connected, run the following commands in sequence:
 
 ```bash
 mkdir helixhomies
 cd helixhomies
+# the next command should only be executed if you would like to make predictions on the SG-NEx data
+# edit the URL to access the specific json file
 wget http://sg-nex-data.s3-website-ap-southeast1.amazonaws.com/data/processed_data/m6Anet/SGNex_MCF7_directRNA_replicate3_run1/data.json
-# (edit the URL above to the specific json file you're asked to download)
 ```
+
+Note: If you DO NOT download the SG-NEx data directly into the server directory with the `wget` command, you will have to transfer a JSON file in the next step.
 
 ---
 
-## 3. Transfer `ohe.pkl` and `random_forest_model.pkl` from GitHub/local machine
+## 3. Transfer data file, `predict_m6a.py`, `ohe.pkl`, and `random_forest_model.pkl` from GitHub/local machine
 
-Download the `ohe.pkl` and `random_forest_model.pkl` (from our GitHub) to the same folder as your `.pem` file on your local machine. These two `.pkl` files contain stored artifacts so no retraining is required on dataset0.
+Download `predict_m6a.py`, `ohe.pkl`, and `random_forest_model.pkl` (from our GitHub) to the same folder as your `.pem` file on your local machine. The two `.pkl` files contain stored artifacts so no retraining is required on dataset0. The `.py` file is the script used to generate predictions.
+
+If you do not have a dataset to make predictions on (already stored in your local machine) and you did not directly download the SG-NEx data into the server directory, you may also download any of the files from our GitHub's `data/` directory to the same folder as all the other files.
 
 **Workflow (disconnect, SCP, reconnect):**
 
@@ -43,12 +50,17 @@ Download the `ohe.pkl` and `random_forest_model.pkl` (from our GitHub) to the sa
 exit
 ```
 
-2. From your local machine (where the `.pem` file and the two `.pkl` files are), run the `scp` command. Edit `YourMachineAddress` to your machine's address and adjust path separators as appropriate for your OS.
+2. From your local machine (where all `.pem`, `.pkl`, and `.py` files are), run the `scp` command. Edit `YourMachineAddress` to your machine's address and adjust path separators as appropriate for your OS.
+
+If you did not download the SG-NEx data in Step 1, transfer your JSON file in this step as well. If you would like to make predictions on a few data files, transfer them all by adding the path to the files as shown in the example.
 
 Windows PowerShell style example (adjust as needed):
 
 ```powershell
-scp -i .\YourMachineAddress.pem .\random_forest_model.pkl .\ohe.pkl ubuntu@YourMachineAddress.nus.cloud:~/helixhomies/
+scp -i ./YourMachineAddress.pem ./random_forest_model.pkl ./ohe.pkl ./predict_m6a.py ./data.json.gz ubuntu@YourMachineAddress.nus.cloud:~/helixhomies/
+# ensure current directory is where all necessary files are stored
+# example: transfer 2 data files
+# scp -i ./dsa4262-2510-teamname-myname.pem ./random_forest_model.pkl ./ohe.pkl ./predict_m6a.py ./data.json ./data2.json.gz ubuntu@dsa4262-2510-teamname-myname.nus.cloud:~/helixhomies/
 ```
 
 Linux/macOS style example (adjust as needed):
@@ -57,7 +69,17 @@ Linux/macOS style example (adjust as needed):
 scp -i ./YourMachineAddress.pem ./random_forest_model.pkl ./ohe.pkl ubuntu@YourMachineAddress.nus.cloud:~/helixhomies/
 ```
 
-3. Reconnect to your instance once the files are uploaded.
+3. Reconnect to your instance once the files are uploaded and `cd helixhomies` to navigate to the helixhomies folder.
+
+Run the `ll` command in the folder to check if all necessary files have been transferred.
+
+- `random_forest_model.pkl`
+
+- `ohe.pkl`
+
+- `predict_m6a.py`
+
+- `data.json` (or `data.json.gz`, according to your file name)
 
 ---
 
@@ -68,195 +90,45 @@ Run these commands on the Ubuntu instance:
 ```bash
 sudo apt update
 sudo apt install -y python3-pip
-pip3 install numpy pandas matplotlib scikit-learn imbalanced-learn xgboost joblib orjson
+pip3 install numpy pandas scikit-learn joblib orjson
 ```
 
 ---
 
-## 5. Create the `helixhomies.py` script
-
-Inside the `helixhomies` folder, create the Python script:
-
-```bash
-nano helixhomies.py
-```
-
-Copy and paste the following content into `helixhomies.py` (then press `Ctrl+O`, `Enter`, and `Ctrl+X` to save and exit):
-
-```python
-import gzip, json, csv
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-from sklearn.preprocessing import OneHotEncoder
-from imblearn.over_sampling import SMOTE
-from xgboost import XGBClassifier
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import (
-    roc_auc_score, average_precision_score, precision_recall_curve
-)
-
-def extract_features(reads_list):
-    """Extract statistical features from reads"""
-
-    reads_array = np.array(reads_list)  # shape = (n_reads, 9)
-
-    stats = []
-    weight_map = {1: 0, 2: 0, 4: 3, 5: 3, 7: 6, 8: 6}  # Map feature indices for sd/mean to their dwell time col for weighting
-
-    for i in range(reads_array.shape[1]):  # for each of the 9 features
-        col = reads_array[:, i]
-        if i in weight_map:
-            w = reads_array[:, weight_map[i]] # corresponding dwell time column
-            denom = np.sum(w) # sum of dwell times
-            if denom > 0:
-                mean_val = np.sum(w * col) / denom # weighted mean
-                sd_val = np.sqrt(np.sum(w * (col - mean_val)**2) / denom) # weighted std
-                stats.extend([mean_val, sd_val])
-
-        stats.extend([
-            np.mean(col),
-            np.std(col),
-            np.median(col),
-            np.min(col),
-            np.max(col)
-        ])
-
-    # compute diffs between prev-central and next-central
-    diffs = {
-        "prev": reads_array[:, 3:6] - reads_array[:, 0:3],   # central - previous
-        "next": reads_array[:, 6:9] - reads_array[:, 3:6]    # next - central
-    }
-
-    # compute average dwell times for weighting
-    dwells = {
-        "prev": (reads_array[:, 3] + reads_array[:, 0]) / 2,  # avg dwell time between central and previous
-        "next": (reads_array[:, 3] + reads_array[:, 6]) / 2    # avg dwell time between central and next
-    }
-
-    for key in ["prev", "next"]:
-        diff = diffs[key]
-        weights = dwells[key]
-        denom = np.sum(weights)
-
-        stats.extend([
-            np.mean(diff, axis=0).tolist(),  # average per feature type
-            np.std(diff, axis=0).tolist(),
-            np.median(diff, axis=0).tolist(),
-            np.min(diff, axis=0).tolist(),
-            np.max(diff, axis=0).tolist()
-        ])
-
-        if denom > 0:
-            for j in (1,2): # sd diff and mean diff
-                w_mean = np.sum(weights * diff[:, j]) / denom
-                w_std = np.sqrt(np.sum(weights * (diff[:, j] - w_mean)**2) / denom)
-                stats.extend([w_mean, w_std]) # add in weighted mean and std for sd diff and mean diff
-
-    # Flatten lists inside stats
-    stats = np.concatenate([np.ravel(s) if isinstance(s, (list, np.ndarray)) else [s] for s in stats])
-
-    return np.array(stats)
-
-
-def extract_seq_features(df):
-    """Extract sequence features from a sequence string."""
-    pos = [0,1,2,5,6] # 3 and 4 are A and C from DRACH motif, will not change
-    for i in pos:
-        df[f'seq_{i}'] = df['sequence'].str[i]
-    return df
-
-
-def test_feature_extraction(test_df, encoder):
-    """Carry out all feature extraction steps on the test data."""
-    test_df = test_df.copy()
-    test_df['features'] = test_df['reads'].apply(extract_features)
-    n_features = len(test_df['features'].iloc[0])
-    feature_columns = [f'feature_{i}' for i in range(n_features)]
-
-    # Convert features list to separate columns
-    features_df = pd.DataFrame(test_df['features'].tolist(), columns=feature_columns, index=test_df.index)
-
-    # Extract sequence features
-    ohe_columns = extract_seq_features(test_df)
-    ohe_columns = encoder.transform(ohe_columns[['seq_0', 'seq_1', 'seq_2', 'seq_5', 'seq_6']])
-    ohe_df = pd.DataFrame(ohe_columns, columns=encoder.get_feature_names_out(), index=test_df.index)
-
-    # Combine all features
-    test_df = pd.concat([features_df, ohe_df], axis=1)
-
-    return test_df
-
-import orjson
-def parse_json_unzipped(path):
-    json_data = []
-    with open(path, 'r') as f:
-        for line in f:
-            entry = orjson.loads(line)
-            for transcript, position_dict in entry.items():
-                for position, sequence_dict in position_dict.items():
-                    for sequence, reads in sequence_dict.items():
-                        json_data.append({
-                            'transcript_id': transcript,
-                            'transcript_position': int(position),
-                            'sequence': sequence,
-                            'reads': reads
-                        })
-
-    df = pd.DataFrame(json_data)
-    df.reset_index(inplace=True)
-    df.rename(columns={'index': 'orig_idx'}, inplace=True)
-    df.set_index('orig_idx', inplace=True)
-
-    return df
-
-import joblib
-
-rf_model = joblib.load('/home/ubuntu/helixhomies/random_forest_model.pkl')
-enc = joblib.load('/home/ubuntu/helixhomies/ohe.pkl')
-
-
-# change the filename and path
-filename = 'predictions'
-filepath = '/home/ubuntu/helixhomies/data.json'  # assuming you've moved the JSON file here
-data = parse_json_unzipped(filepath)
-test = test_feature_extraction(data, enc)
-pred = data.copy()
-pred['score'] = rf_model.predict_proba(test)[:, 1]
-final_pred = pred[['transcript_id', 'transcript_position', 'score']].copy()
-final_pred.to_csv(f'/home/ubuntu/helixhomies/{filename}.csv', index=False)
-```
-
----
-
-## 6. Run the prediction script
+## 5. Run the prediction script
 
 From inside `/home/ubuntu/helixhomies` (or the helixhomies folder in your home directory), execute:
 
 ```bash
-python3 helixhomies.py
+python3 predict_m6a.py input_data_path output_data_path
+# e.g. python3 predict_m6a.py ./data.json ./predictions_csv
 ```
 
 ---
 
-## 7. If it crashes
+## 6. If it crashes
 
 If the job crashes due to memory/GPU constraints, try a machine with higher GPU RAM (or higher instance spec). This is unlikely but flagged just in case.
 
 ---
 
-## 8. Verify output
+## 7. Verify output
 
-When the script finishes, ensure there is a file called `predictions.csv` in the `helixhomies` folder:
+When the script finishes, ensure there is a file called `predictions.csv` (or the name you set the output file to be) in the `helixhomies` folder. To view the content of the file, use the `less` command.
 
 ```bash
 ls
 # you should see: predictions.csv
 ```
 
+```bash
+less predictions.csv
+# you will be able to view the file
+```
+
 ---
 
-## 9. Download the `predictions.csv` to your local machine
+## 8. Download the `predictions.csv` to your local machine
 
 1. Exit the instance:
 
@@ -270,6 +142,8 @@ Windows PowerShell style example (adjust as needed):
 
 ```powershell
 scp -i YourMachineAddress.pem ubuntu@YourMachineAddress.nus.cloud:/home/ubuntu/helixhomies/predictions.csv .
+# this saves it in your current directory
+# edit the last argument . to ./path_to_desired_directory if needed
 ```
 
 Linux/macOS style example (adjust as needed):
@@ -286,7 +160,7 @@ The file will appear in the same folder as your `.pem` file on your local machin
 
 - Edit any URL, `YourMachineAddress`, and file paths to match your specific instance and file locations.
 - If using Windows, pay attention to backslash vs forward slash in `scp` commands and use PowerShell or WSL accordingly.
-- The code expects `data.json` to be in `/home/ubuntu/helixhomies/` and the two `.pkl` files to be present there as well.
+- The code expects `data.json` to be in `/home/ubuntu/helixhomies/` and the two `.pkl` files and prediction script `predict_m6a.py` to be present there as well.
 
 ---
 
